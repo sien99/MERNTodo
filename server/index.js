@@ -1,4 +1,4 @@
-//RESTFUL API
+//* RESTFUL API
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -17,14 +17,15 @@ mongoose.connect('mongodb+srv://admin-yh:'+mongoAtlasPassword+'@cluster0.ea91s.m
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(()=>{
-     console.log("Database connected.")
+     console.log("Mongo Atlas Online database connected.")
    }).catch((error)=>{
        console.error(error)
     });
 
 const noteSchema={
     title: String,
-    content: String
+    content: String,
+    userId: String
 }
 
 const Note = mongoose.model("Note",noteSchema);
@@ -69,7 +70,7 @@ app.get("/todos", async(req,res)=>{
 });
 
 //insert a todo into atlas
-app.post("/todos",async(req,res)=>{
+app.post("/todos",(req,res)=>{
     try{
         // const small = new Tank({ size: 'small' });
         // small.save(function (err) {
@@ -79,17 +80,19 @@ app.post("/todos",async(req,res)=>{
         console.log(req.body); //should use console to see
         const title  = req.body.newNote.title;
         const content  = req.body.newNote.content;
+        const userId  = req.body.newNote.userId;
 
         const noteInput = new Note({
             title: title,
-            content: content
+            content: content,
+            userId: userId
         });
 
         noteInput.save(function(err){
             if(err){
                 return handleError(err);
             }else{
-                console.log("successfully added data into db!");
+                console.log("Successfully added data into db!");
             } 
             //saved!
         });
@@ -99,15 +102,47 @@ app.post("/todos",async(req,res)=>{
     }
 });
 
+app.put("/todos/:id", async(req,res) => {
+    try {
+        // console.log(req.body);
+        const { id } = req.params;
+        const { title, content } = req.body.edit;
+        const edit = await Note.findOneAndUpdate({_id:id}, {
+                title: title,
+                content: content
+            },
+            function (err, docs) {
+            if(!err){
+                console.log("Successfully edit item:" + docs);
+                res.json(docs)
+            }
+        })
+        // Example: Update name to Gourav
+        // User.findByIdAndUpdate(user_id, {
+        //         name: 'Gourav'
+        //     },
+        //     function (err, docs) {
+        //         if (err) {
+        //             console.log(err)
+        //         } else {
+        //             console.log("Updated User : ", docs);
+        //         }
+        //     });
+    } catch (error) {
+        console.error(error);
+    }
+});
+
 //delete note based on unique id
-app.delete("/todos/:id",async(req,res)=>{
+app.delete("/todos/:id",async(req,res) => {
     try {
         // console.log(req.params.id);
         deleteId = req.params.id;
-        const remove = await Note.findByIdAndRemove(deleteId, function(err){
+        const remove = await Note.findByIdAndRemove(deleteId, function(err,docs){
             if(!err){
                 console.log("Successfully delete item "+deleteId);
-                res.redirect("/");
+                res.json(docs)
+                // res.redirect("/");
             }else{
                 console.error(err);
             }
@@ -119,5 +154,5 @@ app.delete("/todos/:id",async(req,res)=>{
 
 
 app.listen(5000,()=>{
-    console.log("server has started on port 5000");
+    console.log("Server has started on port 5000");
 });
